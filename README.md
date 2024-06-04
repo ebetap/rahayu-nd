@@ -1,4 +1,5 @@
 ### `rajendra-hayuningrat`
+penulis bercerita kadang-kadang sesuatu itu akan mencapai kesempurnaan awal mulanya harus di pisahkan terlebih-dahulu untuk belajar memperbaiki diri masing-masing. Namun itu hanya sementara. setelah yang di pisahkan itu mengupgrade dirinya se diri suatu saat akan di satukan kembali. -Sastra Jendra Hayuningrat Pangruwating Diyu
 
 Modul ini menyediakan metode enkripsi dan dekripsi menggunakan algoritma AES-GCM untuk enkripsi data dan RSA-OAEP untuk enkripsi kunci AES, menggunakan Node.js `crypto` library.
 
