@@ -124,7 +124,7 @@ Lisensi modul ini adalah **[Bebas-Berakhlak]**.
 
 ### Masalah
 
-Jika Anda menemukan masalah atau memiliki pertanyaan, silakan buka **[instagram.com/betapriyoko]**.
+Jika Anda menemukan masalah atau memiliki pertanyaan, silakan buka **[instagram.com/adabjawa]**.
 
 ### Tentang
 
