@@ -3,7 +3,7 @@ penulis bercerita, sesuatu itu akan mencapai kesempurnaan awal mulanya harus di 
 
 Modul ini menyediakan metode enkripsi dan dekripsi menggunakan algoritma AES-GCM untuk enkripsi data dan RSA-OAEP untuk enkripsi kunci AES, menggunakan Node.js `crypto` library.
 
-Sure! Here is the flow of how the `RahayuND` class works for encrypting and decrypting data:
+Here is the flow of how the `RahayuND` class works for encrypting and decrypting data:
 
 ### Flow of Encryption and Decryption
 
