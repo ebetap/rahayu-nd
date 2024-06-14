@@ -3,139 +3,107 @@ penulis bercerita, sesuatu itu akan mencapai kesempurnaan awal mulanya harus di 
 
 Modul ini menyediakan metode enkripsi dan dekripsi menggunakan algoritma AES-GCM untuk enkripsi data dan RSA-OAEP untuk enkripsi kunci AES, menggunakan Node.js `crypto` library.
 
-#### Instalasi
+Sure! Here is the flow of how the `RahayuND` class works for encrypting and decrypting data:
 
-Instalasi modul dapat dilakukan dengan perintah berikut:
+### Flow of Encryption and Decryption
 
-```bash
-npm install rajendra-hayuningrat
-```
+1. **Initialization**:
+   - Create an instance of the `RahayuND` class with paths to the public and private key files.
 
-#### Penggunaan
+2. **Encryption Process**:
+   - **Generate AES Key and IV**: A random 256-bit AES key and a 16-byte IV are generated.
+   - **Encrypt Data with AES-GCM**: The data is encrypted using AES-256-GCM, which provides confidentiality and integrity. This process generates the encrypted data and an authentication tag.
+   - **Encrypt AES Key with RSA-OAEP**: The AES key is encrypted using the RSA public key with OAEP padding and SHA-512 as the hashing algorithm.
+   - **Combine Encrypted Results**: The encrypted data, IV, authentication tag, and the encrypted AES key are combined into a JSON object and returned as a string.
 
-```javascript
-const { encrypt, decrypt } = require('rajendra-hayuningrat');
+3. **Decryption Process**:
+   - **Parse Encrypted Payload**: The JSON string is parsed to retrieve the encrypted data, IV, authentication tag, and encrypted AES key.
+   - **Decrypt AES Key with RSA-OAEP**: The encrypted AES key is decrypted using the RSA private key with OAEP padding and SHA-512 as the hashing algorithm.
+   - **Decrypt Data with AES-GCM**: The encrypted data is decrypted using the decrypted AES key, IV, and authentication tag. This process restores the original plaintext data.
 
-(async () => {
-  const plaintext = 'Ini adalah teks rahasia yang akan dienkripsi';
-  
-  try {
-    // Enkripsi
-    const encrypted = await encrypt(plaintext);
-    console.log('Encrypted:', encrypted);
+### Detailed Steps
 
-    // Dekripsi
-    const decrypted = await decrypt(encrypted);
-    console.log('Decrypted:', decrypted);
-  } catch (error) {
-    console.error('Error:', error);
-  }
-})();
-```
+1. **Initialization**:
+   ```javascript
+   const RahayuND = require('./path-to-your-rahayund-class');
 
-#### API
+   const publicKeyPath = path.join(__dirname, 'keys', 'public.pem');
+   const privateKeyPath = path.join(__dirname, 'keys', 'private.pem');
+   const rahayu = new RahayuND(publicKeyPath, privateKeyPath);
+   ```
 
-##### `encrypt(data: string): Promise<string>`
+2. **Encryption**:
+   ```javascript
+   const data = 'Sensitive data that needs encryption';
 
-Mengenkripsi data menggunakan AES-GCM dengan kunci acak dan IV. Mengembalikan objek JSON yang berisi data terenkripsi, IV, authTag, dan kunci AES terenkripsi dengan RSA-OAEP.
+   // Encrypt data
+   const encryptedPayload = await rahayu.encrypt(data);
+   console.log('Encrypted Payload:', encryptedPayload);
+   ```
 
-- `data`: String yang akan dienkripsi.
+   - **Generate AES Key and IV**:
+     ```javascript
+     const { key: aesKey, iv } = RahayuND.generateAESKeyAndIV();
+     ```
 
-##### `decrypt(encryptedPayload: string): Promise<string>`
+   - **Encrypt Data with AES-GCM**:
+     ```javascript
+     const { encryptedData, authTag } = RahayuND.encryptWithAES(data, aesKey, iv);
+     ```
 
-Mendekripsi data yang telah dienkripsi menggunakan AES-GCM dan kunci AES yang telah didekripsi dengan RSA-OAEP.
+   - **Encrypt AES Key with RSA-OAEP**:
+     ```javascript
+     const encryptedAESKey = await rahayu.encryptAESKeyWithRSA(aesKey);
+     ```
 
-- `encryptedPayload`: String JSON yang berisi data terenkripsi, IV, authTag, dan kunci AES terenkripsi.
+   - **Combine Encrypted Results**:
+     ```javascript
+     return JSON.stringify({
+       encryptedData,
+       iv: iv.toString('base64'),
+       authTag: authTag.toString('base64'),
+       encryptedAESKey
+     });
+     ```
 
-#### Contoh Penggunaan
+3. **Decryption**:
+   ```javascript
+   // Decrypt data
+   const decryptedData = await rahayu.decrypt(encryptedPayload);
+   console.log('Decrypted Data:', decryptedData);
+   ```
 
-```javascript
-const { encrypt, decrypt } = require('rajendra-hayuningrat');
+   - **Parse Encrypted Payload**:
+     ```javascript
+     const payload = JSON.parse(encryptedPayload);
+     ```
 
-(async () => {
-  const plaintext = 'Ini adalah teks rahasia yang akan dienkripsi';
-  
-  try {
-    // Enkripsi
-    const encrypted = await encrypt(plaintext);
-    console.log('Encrypted:', encrypted);
+   - **Decrypt AES Key with RSA-OAEP**:
+     ```javascript
+     const aesKey = await rahayu.decryptAESKeyWithRSA(payload.encryptedAESKey);
+     ```
 
-    // Dekripsi
-    const decrypted = await decrypt(encrypted);
-    console.log('Decrypted:', decrypted);
-  } catch (error) {
-    console.error('Error:', error);
-  }
-})();
-```
+   - **Decrypt Data with AES-GCM**:
+     ```javascript
+     return RahayuND.decryptWithAES(
+       payload.encryptedData,
+       aesKey,
+       Buffer.from(payload.iv, 'base64'),
+       Buffer.from(payload.authTag, 'base64')
+     );
+     ```
 
-### Dokumentasi Lengkap
+### Summary
 
-#### `encrypt(data: string): Promise<string>`
+1. **Initialization**: Create an instance of `RahayuND` with paths to public and private keys.
+2. **Encryption**:
+   - Generate AES key and IV.
+   - Encrypt data using AES-GCM.
+   - Encrypt AES key using RSA-OAEP.
+   - Combine encrypted data, IV, authentication tag, and encrypted AES key into a JSON object.
+3. **Decryption**:
+   - Parse the JSON object to extract encrypted components.
+   - Decrypt the AES key using RSA-OAEP.
+   - Decrypt data using AES-GCM with the decrypted AES key, IV, and authentication tag.
 
-Mengenkripsi data menggunakan AES-GCM dengan kunci acak dan IV.
-
-- `data`: String yang akan dienkripsi.
-
-Mengembalikan objek JSON dengan properti:
-
-- `encryptedData`: Data terenkripsi dalam format hexadecimal.
-- `iv`: IV dalam format base64.
-- `authTag`: AuthTag dalam format base64.
-- `encryptedAESKey`: Kunci AES yang telah terenkripsi dengan RSA-OAEP dalam format base64.
-
-#### `decrypt(encryptedPayload: string): Promise<string>`
-
-Mendekripsi data yang telah dienkripsi menggunakan AES-GCM.
-
-- `encryptedPayload`: String JSON yang berisi data terenkripsi, IV, authTag, dan kunci AES terenkripsi.
-
-Mengembalikan string plaintext yang telah didekripsi.
-
-### Contoh Penggunaan
-
-```javascript
-const { encrypt, decrypt } = require('rajendra-hayuningrat');
-
-(async () => {
-  const plaintext = 'Ini adalah teks rahasia yang akan dienkripsi';
-  
-  try {
-    // Enkripsi
-    const encrypted = await encrypt(plaintext);
-    console.log('Encrypted:', encrypted);
-
-    // Dekripsi
-    const decrypted = await decrypt(encrypted);
-    console.log('Decrypted:', decrypted);
-  } catch (error) {
-    console.error('Error:', error);
-  }
-})();
-```
-
-### Pengembang
-
-Modul ini dikembangkan oleh **[Beta]**.
-
-### Lisensi
-
-Lisensi modul ini adalah **[Bebas-Berakhlak]**.
-
-### Masalah
-
-Jika Anda menemukan masalah atau memiliki pertanyaan, silakan buka **[instagram.com/adabjawa]**.
-
-### Tentang
-
-Modul `rajendra-hayuningrat` menggunakan algoritma AES-GCM untuk enkripsi data dan RSA-OAEP untuk enkripsi kunci AES, menggunakan Node.js `crypto` library.
-
-### Kredit
-
-Modul ini diilhami oleh kebutuhan untuk mengenkripsi data dengan aman menggunakan standar yang kuat dan diterbitkan di repo ini.
-
-### Metode Enkripsi Paling Aman di Dunia
-
-Modul `rajendra-hayuningrat` menggunakan AES-GCM dan RSA-OAEP untuk memberikan tingkat keamanan yang sangat tinggi bagi data Anda. Kunci AES yang dihasilkan secara acak dan IV yang unik, bersama dengan kunci RSA yang panjang, menjadikan metode ini yang paling aman di dunia saat ini untuk enkripsi data.
-
----
+This flow ensures the data is securely encrypted and decrypted using a combination of symmetric and asymmetric cryptography, providing both confidentiality and integrity.
