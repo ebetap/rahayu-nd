@@ -2,109 +2,124 @@ const crypto = require('crypto');
 const fs = require('fs').promises;
 const path = require('path');
 
-const publicKeyPath = path.join(__dirname, 'keys', 'public.pem');
-const privateKeyPath = path.join(__dirname, 'keys', 'private.pem');
+class RahayuND {
+  static AES_KEY_LENGTH = 32; // 256-bit AES key
+  static AES_IV_LENGTH = 16;  // 16 bytes IV for GCM
+  static RSA_KEY_BITS = 8192; // 8192-bit RSA key
 
-const AES_KEY_LENGTH = 32; // 256-bit AES key
-const AES_IV_LENGTH = 16;  // 16 bytes IV for GCM
-const RSA_KEY_BITS = 8192; // 8192-bit RSA key
+  constructor(publicKeyPath, privateKeyPath) {
+    this.publicKeyPath = publicKeyPath;
+    this.privateKeyPath = privateKeyPath;
+  }
 
-// Fungsi untuk menghasilkan kunci AES dan IV
-function generateAESKeyAndIV() {
-  return {
-    key: crypto.randomBytes(AES_KEY_LENGTH),
-    iv: crypto.randomBytes(AES_IV_LENGTH)
-  };
-}
+  // Function to generate AES key and IV
+  static generateAESKeyAndIV() {
+    return {
+      key: crypto.randomBytes(RahayuND.AES_KEY_LENGTH),
+      iv: crypto.randomBytes(RahayuND.AES_IV_LENGTH)
+    };
+  }
 
-// Fungsi untuk mengenkripsi data dengan AES-GCM
-function encryptWithAES(data, aesKey, iv) {
-  const cipher = crypto.createCipheriv('aes-256-gcm', aesKey, iv);
-  let encrypted = cipher.update(data, 'utf8', 'hex');
-  encrypted += cipher.final('hex');
-  const authTag = cipher.getAuthTag();
-  return { encryptedData: encrypted, authTag };
-}
+  // Function to encrypt data with AES-GCM
+  static encryptWithAES(data, aesKey, iv) {
+    const cipher = crypto.createCipheriv('aes-256-gcm', aesKey, iv);
+    let encrypted = cipher.update(data, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    const authTag = cipher.getAuthTag();
+    return { encryptedData: encrypted, authTag };
+  }
 
-// Fungsi untuk mengenkripsi kunci AES dengan RSA-OAEP
-async function encryptAESKeyWithRSA(aesKey, publicKey) {
-  const encryptedBuffer = await crypto.publicEncrypt({
-    key: publicKey,
-    padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-    oaepHash: 'sha512'
-  }, aesKey);
-  return encryptedBuffer.toString('base64');
-}
+  // Function to encrypt AES key with RSA-OAEP
+  async encryptAESKeyWithRSA(aesKey) {
+    const publicKey = await fs.readFile(this.publicKeyPath, 'utf8');
+    const encryptedBuffer = await crypto.publicEncrypt({
+      key: publicKey,
+      padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+      oaepHash: 'sha512'
+    }, aesKey);
+    return encryptedBuffer.toString('base64');
+  }
 
-// Fungsi untuk mendekripsi kunci AES dengan RSA-OAEP
-async function decryptAESKeyWithRSA(encryptedAESKey, privateKey) {
-  const encryptedBuffer = Buffer.from(encryptedAESKey, 'base64');
-  return crypto.privateDecrypt({
-    key: privateKey,
-    padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-    oaepHash: 'sha512'
-  }, encryptedBuffer);
-}
+  // Function to decrypt AES key with RSA-OAEP
+  async decryptAESKeyWithRSA(encryptedAESKey) {
+    const privateKey = await fs.readFile(this.privateKeyPath, 'utf8');
+    const encryptedBuffer = Buffer.from(encryptedAESKey, 'base64');
+    return crypto.privateDecrypt({
+      key: privateKey,
+      padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+      oaepHash: 'sha512'
+    }, encryptedBuffer);
+  }
 
-// Fungsi untuk mendekripsi data dengan AES-GCM
-function decryptWithAES(encryptedData, aesKey, iv, authTag) {
-  const decipher = crypto.createDecipheriv('aes-256-gcm', aesKey, iv);
-  decipher.setAuthTag(authTag);
-  let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-  return decrypted;
-}
+  // Function to decrypt data with AES-GCM
+  static decryptWithAES(encryptedData, aesKey, iv, authTag) {
+    const decipher = crypto.createDecipheriv('aes-256-gcm', aesKey, iv);
+    decipher.setAuthTag(authTag);
+    let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  }
 
-// Fungsi untuk mengenkripsi payload
-async function encrypt(data) {
-  try {
-    const publicKey = await fs.readFile(publicKeyPath, 'utf8');
+  // Function to validate file path
+  static async validateFilePath(filePath) {
+    try {
+      await fs.access(filePath);
+    } catch (err) {
+      throw new Error(`Invalid file path: ${filePath}`);
+    }
+  }
 
-    // Generate AES key dan IV
-    const { key: aesKey, iv } = generateAESKeyAndIV();
+  // Function to encrypt payload
+  async encrypt(data) {
+    try {
+      // Validate public key file path
+      await RahayuND.validateFilePath(this.publicKeyPath);
 
-    // Enkripsi data dengan AES-GCM
-    const { encryptedData, authTag } = encryptWithAES(data, aesKey, iv);
+      // Generate AES key and IV
+      const { key: aesKey, iv } = RahayuND.generateAESKeyAndIV();
 
-    // Enkripsi kunci AES dengan RSA-OAEP
-    const encryptedAESKey = await encryptAESKeyWithRSA(aesKey, publicKey);
+      // Encrypt data with AES-GCM
+      const { encryptedData, authTag } = RahayuND.encryptWithAES(data, aesKey, iv);
 
-    // Gabungkan hasil enkripsi
-    return JSON.stringify({
-      encryptedData,
-      iv: iv.toString('base64'),
-      authTag: authTag.toString('base64'),
-      encryptedAESKey
-    });
-  } catch (err) {
-    console.error('Error during encryption:', err);
-    throw err;
+      // Encrypt AES key with RSA-OAEP
+      const encryptedAESKey = await this.encryptAESKeyWithRSA(aesKey);
+
+      // Combine encrypted results
+      return JSON.stringify({
+        encryptedData,
+        iv: iv.toString('base64'),
+        authTag: authTag.toString('base64'),
+        encryptedAESKey
+      });
+    } catch (err) {
+      console.error('Error during encryption:', err.message);
+      throw err;
+    }
+  }
+
+  // Function to decrypt payload
+  async decrypt(encryptedPayload) {
+    try {
+      // Validate private key file path
+      await RahayuND.validateFilePath(this.privateKeyPath);
+
+      const payload = JSON.parse(encryptedPayload);
+
+      // Decrypt AES key with RSA-OAEP
+      const aesKey = await this.decryptAESKeyWithRSA(payload.encryptedAESKey);
+
+      // Decrypt data with AES-GCM
+      return RahayuND.decryptWithAES(
+        payload.encryptedData,
+        aesKey,
+        Buffer.from(payload.iv, 'base64'),
+        Buffer.from(payload.authTag, 'base64')
+      );
+    } catch (err) {
+      console.error('Error during decryption:', err.message);
+      throw err;
+    }
   }
 }
 
-// Fungsi untuk mendekripsi payload
-async function decrypt(encryptedPayload) {
-  try {
-    const privateKey = await fs.readFile(privateKeyPath, 'utf8');
-    const payload = JSON.parse(encryptedPayload);
-
-    // Dekripsi kunci AES dengan RSA-OAEP
-    const aesKey = await decryptAESKeyWithRSA(payload.encryptedAESKey, privateKey);
-
-    // Dekripsi data dengan AES-GCM
-    return decryptWithAES(
-      payload.encryptedData,
-      aesKey,
-      Buffer.from(payload.iv, 'base64'),
-      Buffer.from(payload.authTag, 'base64')
-    );
-  } catch (err) {
-    console.error('Error during decryption:', err);
-    throw err;
-  }
-}
-
-module.exports = {
-  encrypt,
-  decrypt
-};
+module.exports = RahayuND;
