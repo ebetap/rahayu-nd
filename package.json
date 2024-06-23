@@ -1,0 +1,32 @@
+{
+  "name": "rahayu-nd",
+  "version": "1.0.0",
+  "description": "A cryptographic library for AES encryption/decryption and RSA key management.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ebetap/rahayu-nd.git"
+  },
+  "keywords": [
+    "crypto",
+    "encryption",
+    "decryption",
+    "AES",
+    "RSA",
+    "security"
+  ],
+  "author": "Beta 'Muhammad' Priyoko",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ebetap/rahayu-nd/issues"
+  },
+  "homepage": "https://github.com/ebetap/rahayu-nd/blob/main/README.md",
+  "dependencies": {
+    "axios": "^0.27.2",
+    "winston": "^3.3.3"
+  },
+  "type": "module"
+}
