@@ -1,125 +1,168 @@
-const crypto = require('crypto');
-const fs = require('fs').promises;
-const path = require('path');
+import { promises as crypto } from 'crypto';
+import { promises as fs } from 'fs';
+import axios from 'axios';
+import winston from 'winston';
 
-class RahayuND {
-  static AES_KEY_LENGTH = 32; // 256-bit AES key
-  static AES_IV_LENGTH = 16;  // 16 bytes IV for GCM
-  static RSA_KEY_BITS = 8192; // 8192-bit RSA key
-
-  constructor(publicKeyPath, privateKeyPath) {
-    this.publicKeyPath = publicKeyPath;
-    this.privateKeyPath = privateKeyPath;
-  }
-
-  // Function to generate AES key and IV
-  static generateAESKeyAndIV() {
-    return {
-      key: crypto.randomBytes(RahayuND.AES_KEY_LENGTH),
-      iv: crypto.randomBytes(RahayuND.AES_IV_LENGTH)
-    };
-  }
-
-  // Function to encrypt data with AES-GCM
-  static encryptWithAES(data, aesKey, iv) {
-    const cipher = crypto.createCipheriv('aes-256-gcm', aesKey, iv);
-    let encrypted = cipher.update(data, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    const authTag = cipher.getAuthTag();
-    return { encryptedData: encrypted, authTag };
-  }
-
-  // Function to encrypt AES key with RSA-OAEP
-  async encryptAESKeyWithRSA(aesKey) {
-    const publicKey = await fs.readFile(this.publicKeyPath, 'utf8');
-    const encryptedBuffer = await crypto.publicEncrypt({
-      key: publicKey,
-      padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-      oaepHash: 'sha512'
-    }, aesKey);
-    return encryptedBuffer.toString('base64');
-  }
-
-  // Function to decrypt AES key with RSA-OAEP
-  async decryptAESKeyWithRSA(encryptedAESKey) {
-    const privateKey = await fs.readFile(this.privateKeyPath, 'utf8');
-    const encryptedBuffer = Buffer.from(encryptedAESKey, 'base64');
-    return crypto.privateDecrypt({
-      key: privateKey,
-      padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-      oaepHash: 'sha512'
-    }, encryptedBuffer);
-  }
-
-  // Function to decrypt data with AES-GCM
-  static decryptWithAES(encryptedData, aesKey, iv, authTag) {
-    const decipher = crypto.createDecipheriv('aes-256-gcm', aesKey, iv);
-    decipher.setAuthTag(authTag);
-    let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    return decrypted;
-  }
-
-  // Function to validate file path
-  static async validateFilePath(filePath) {
-    try {
-      await fs.access(filePath);
-    } catch (err) {
-      throw new Error(`Invalid file path: ${filePath}`);
-    }
-  }
-
-  // Function to encrypt payload
-  async encrypt(data) {
-    try {
-      // Validate public key file path
-      await RahayuND.validateFilePath(this.publicKeyPath);
-
-      // Generate AES key and IV
-      const { key: aesKey, iv } = RahayuND.generateAESKeyAndIV();
-
-      // Encrypt data with AES-GCM
-      const { encryptedData, authTag } = RahayuND.encryptWithAES(data, aesKey, iv);
-
-      // Encrypt AES key with RSA-OAEP
-      const encryptedAESKey = await this.encryptAESKeyWithRSA(aesKey);
-
-      // Combine encrypted results
-      return JSON.stringify({
-        encryptedData,
-        iv: iv.toString('base64'),
-        authTag: authTag.toString('base64'),
-        encryptedAESKey
-      });
-    } catch (err) {
-      console.error('Error during encryption:', err.message);
-      throw err;
-    }
-  }
-
-  // Function to decrypt payload
-  async decrypt(encryptedPayload) {
-    try {
-      // Validate private key file path
-      await RahayuND.validateFilePath(this.privateKeyPath);
-
-      const payload = JSON.parse(encryptedPayload);
-
-      // Decrypt AES key with RSA-OAEP
-      const aesKey = await this.decryptAESKeyWithRSA(payload.encryptedAESKey);
-
-      // Decrypt data with AES-GCM
-      return RahayuND.decryptWithAES(
-        payload.encryptedData,
-        aesKey,
-        Buffer.from(payload.iv, 'base64'),
-        Buffer.from(payload.authTag, 'base64')
-      );
-    } catch (err) {
-      console.error('Error during decryption:', err.message);
-      throw err;
-    }
+// Custom error classes for better error handling
+class EncryptionError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'EncryptionError';
   }
 }
 
-module.exports = RahayuND;
+class DecryptionError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'DecryptionError';
+  }
+}
+
+class InvalidPathError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'InvalidPathError';
+  }
+}
+
+/**
+ * Class for handling cryptographic operations including AES encryption/decryption and RSA key management.
+ * @class
+ */
+export default class Rahayu {
+  static DEFAULT_AES_KEY_LENGTH = 32; // 256-bit AES key
+  static DEFAULT_AES_IV_LENGTH = 16;  // 16 bytes IV for GCM
+  static DEFAULT_RSA_KEY_BITS = 8192; // 8192-bit RSA key
+  static AES_ALGORITHM = 'aes-256-gcm';
+  static UTF8_ENCODING = 'utf8';
+
+  /**
+   * @constructor
+   * @param {string} publicKeyPathOrUrl - Path or URL to the public RSA key.
+   * @param {string} privateKeyPathOrUrl - Path or URL to the private RSA key.
+   * @param {Object} [options] - Additional options.
+   * @param {number} [options.aesKeyLength] - Length of AES key in bytes.
+   * @param {number} [options.aesIvLength] - Length of AES IV in bytes.
+   * @param {number} [options.rsaKeyBits] - Number of bits for RSA key.
+   * @param {Object} [options.logger] - Winston logger instance.
+   * @param {string} [options.encryptionAlgorithm] - Encryption algorithm (default: AES-256-GCM).
+   */
+  constructor(publicKeyPathOrUrl, privateKeyPathOrUrl, options = {}) {
+    this.publicKeyPathOrUrl = publicKeyPathOrUrl;
+    this.privateKeyPathOrUrl = privateKeyPathOrUrl;
+    this.aesKeyLength = options.aesKeyLength || Rahayu.DEFAULT_AES_KEY_LENGTH;
+    this.aesIvLength = options.aesIvLength || Rahayu.DEFAULT_AES_IV_LENGTH;
+    this.rsaKeyBits = options.rsaKeyBits || Rahayu.DEFAULT_RSA_KEY_BITS;
+    this.logger = options.logger || Rahayu.createDefaultLogger();
+    this.encryptionAlgorithm = options.encryptionAlgorithm || Rahayu.AES_ALGORITHM;
+  }
+
+  /**
+   * Creates a default Winston logger instance.
+   * @returns {Object} - Winston logger instance.
+   */
+  static createDefaultLogger() {
+    return winston.createLogger({
+      level: 'info',
+      format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.json()
+      ),
+      transports: [
+        new winston.transports.Console(),
+        new winston.transports.File({ filename: 'app.log' })
+      ],
+    });
+  }
+
+  /**
+   * Fetches a key from a given URL.
+   * @param {string} url - URL to fetch the key from.
+   * @returns {Promise<string>} - Resolves with the fetched key.
+   * @throws {Error} - If fetching the key fails.
+   */
+  async fetchKey(url) {
+    try {
+      const response = await axios.get(url);
+      return response.data;
+    } catch (err) {
+      this.logger.error(`Failed to fetch key from ${url}: ${err.message}`, { stack: err.stack });
+      throw new Error(`Failed to fetch key from ${url}: ${err.message}`);
+    }
+  }
+
+  /**
+   * Validates if the given path or URL is accessible.
+   * @param {string} pathOrUrl - File path or URL to validate.
+   * @returns {Promise<void>} - Resolves if path or URL is valid.
+   * @throws {InvalidPathError} - If path or URL is invalid.
+   */
+  async validatePathOrUrl(pathOrUrl) {
+    try {
+      if (pathOrUrl.startsWith('http')) {
+        await axios.head(pathOrUrl);
+      } else {
+        await fs.access(pathOrUrl);
+      }
+    } catch (err) {
+      throw new InvalidPathError(`Invalid file path or URL: ${pathOrUrl}`);
+    }
+  }
+
+  /**
+   * Retrieves a key from file path or URL.
+   * @param {string} pathOrUrl - File path or URL to retrieve the key from.
+   * @returns {Promise<string>} - Resolves with the retrieved key.
+   * @throws {Error} - If failed to retrieve the key.
+   */
+  async getKey(pathOrUrl) {
+    try {
+      if (pathOrUrl.startsWith('http')) {
+        return await this.fetchKey(pathOrUrl);
+      } else {
+        return await fs.readFile(pathOrUrl, Rahayu.UTF8_ENCODING);
+      }
+    } catch (err) {
+      throw new Error(`Failed to get key from ${pathOrUrl}: ${err.message}`);
+    }
+  }
+
+  /**
+   * Encrypts the AES key using RSA-OAEP.
+   * @param {Buffer} aesKey - AES key to encrypt.
+   * @returns {Promise<string>} - Resolves with the base64-encoded encrypted AES key.
+   * @throws {EncryptionError} - If encryption fails.
+   */
+  async encryptAESKeyWithRSA(aesKey) {
+    try {
+      const publicKey = await this.getKey(this.publicKeyPathOrUrl);
+      const encryptedBuffer = await crypto.publicEncrypt({
+        key: publicKey,
+        padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+        oaepHash: 'sha512'
+      }, aesKey);
+      return encryptedBuffer.toString('base64');
+    } catch (err) {
+      throw new EncryptionError(`Failed to encrypt AES key: ${err.message}`);
+    }
+  }
+
+  /**
+   * Decrypts the AES key using RSA-OAEP.
+   * @param {string} encryptedAESKey - Base64-encoded encrypted AES key.
+   * @returns {Promise<Buffer>} - Resolves with the decrypted AES key.
+   * @throws {DecryptionError} - If decryption fails.
+   */
+  async decryptAESKeyWithRSA(encryptedAESKey) {
+    try {
+      const privateKey = await this.getKey(this.privateKeyPathOrUrl);
+      const encryptedBuffer = Buffer.from(encryptedAESKey, 'base64');
+      return await crypto.privateDecrypt({
+        key: privateKey,
+        padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+        oaepHash: 'sha512'
+      }, encryptedBuffer);
+    } catch (err) {
+      throw new DecryptionError(`Failed to decrypt AES key: ${err.message}`);
+    }
+  }
