@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "A cryptographic library for AES encryption/decryption and RSA key management.",
   "main": "index.js",
+  "scripts": {
+    "build": "npm install"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ebetap/rahayu-nd.git"
