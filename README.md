@@ -3,259 +3,34 @@ penulis bercerita, sesuatu itu akan mencapai kesempurnaan awal mulanya harus di 
 
 Modul ini menyediakan metode enkripsi dan dekripsi menggunakan algoritma AES-GCM untuk enkripsi data dan RSA-OAEP untuk enkripsi kunci AES, menggunakan Node.js `crypto` library.
 
-Here is the flow of how the `RahayuND` class works for encrypting and decrypting data:
+The provided JavaScript code defines a class `Rahayu` that handles cryptographic operations, including AES encryption/decryption and RSA key management. Here's a breakdown of the key components and functionalities:
 
-### Flow of Encryption and Decryption
+1. **Imports and Dependencies:**
+   - `crypto`: Imported from Node.js `crypto` module to handle cryptographic operations.
+   - `fs`: Imported from Node.js `fs` module to handle file system operations asynchronously.
+   - `axios`: Used for making HTTP requests.
+   - `winston`: A logging library for Node.js used for logging errors and information.
 
-1. **Initialization**:
-   - Create an instance of the `RahayuND` class with paths to the public and private key files.
+2. **Custom Error Classes:**
+   - `EncryptionError`, `DecryptionError`, `InvalidPathError`: Custom error classes defined to handle specific types of errors related to encryption failures, decryption failures, and invalid file paths or URLs.
 
-2. **Encryption Process**:
-   - **Generate AES Key and IV**: A random 256-bit AES key and a 16-byte IV are generated.
-   - **Encrypt Data with AES-GCM**: The data is encrypted using AES-256-GCM, which provides confidentiality and integrity. This process generates the encrypted data and an authentication tag.
-   - **Encrypt AES Key with RSA-OAEP**: The AES key is encrypted using the RSA public key with OAEP padding and SHA-512 as the hashing algorithm.
-   - **Combine Encrypted Results**: The encrypted data, IV, authentication tag, and the encrypted AES key are combined into a JSON object and returned as a string.
+3. **Constants and Defaults:**
+   - `DEFAULT_AES_KEY_LENGTH`, `DEFAULT_AES_IV_LENGTH`, `DEFAULT_RSA_KEY_BITS`: Constants defining default lengths for AES keys, IVs, and RSA key bits respectively.
+   - `AES_ALGORITHM`: Constant defining the default AES encryption algorithm (`aes-256-gcm`).
+   - `UTF8_ENCODING`: Constant defining UTF-8 encoding, used for encoding/decoding strings.
 
-3. **Decryption Process**:
-   - **Parse Encrypted Payload**: The JSON string is parsed to retrieve the encrypted data, IV, authentication tag, and encrypted AES key.
-   - **Decrypt AES Key with RSA-OAEP**: The encrypted AES key is decrypted using the RSA private key with OAEP padding and SHA-512 as the hashing algorithm.
-   - **Decrypt Data with AES-GCM**: The encrypted data is decrypted using the decrypted AES key, IV, and authentication tag. This process restores the original plaintext data.
+4. **Constructor (`Rahayu` class):**
+   - Initializes the class with paths or URLs to public and private RSA keys, along with optional parameters (`options`) such as AES key length, AES IV length, RSA key bits, logger instance, and encryption algorithm.
 
-### Detailed Steps
+5. **Methods:**
+   - `createDefaultLogger()`: Static method to create a default instance of the Winston logger.
+   - `fetchKey(url)`: Asynchronously fetches a key from a given URL using Axios. Logs errors if fetching fails.
+   - `validatePathOrUrl(pathOrUrl)`: Asynchronously validates if a given path or URL is accessible. Throws `InvalidPathError` if the path or URL is invalid.
+   - `getKey(pathOrUrl)`: Asynchronously retrieves a key from either a file path or a URL. Uses `fetchKey()` for URLs and `fs.readFile()` for file paths.
+   - `encryptAESKeyWithRSA(aesKey)`: Encrypts an AES key using RSA-OAEP encryption. Retrieves the public key, encrypts the AES key, and returns it as a base64-encoded string.
+   - `decryptAESKeyWithRSA(encryptedAESKey)`: Decrypts a base64-encoded AES key using RSA-OAEP decryption. Retrieves the private key, decrypts the AES key, and returns it as a Buffer.
 
-1. **Initialization**:
-   ```javascript
-   const RahayuND = require('./path-to-your-rahayund-class');
+6. **Usage of Promises and `async/await`:**
+   - Methods use `async` functions to handle asynchronous operations, leveraging `await` to wait for promises to resolve or reject.
 
-   const publicKeyPath = path.join(__dirname, 'keys', 'public.pem');
-   const privateKeyPath = path.join(__dirname, 'keys', 'private.pem');
-   const rahayu = new RahayuND(publicKeyPath, privateKeyPath);
-   ```
-
-2. **Encryption**:
-   ```javascript
-   const data = 'Sensitive data that needs encryption';
-
-   // Encrypt data
-   const encryptedPayload = await rahayu.encrypt(data);
-   console.log('Encrypted Payload:', encryptedPayload);
-   ```
-
-   - **Generate AES Key and IV**:
-     ```javascript
-     const { key: aesKey, iv } = RahayuND.generateAESKeyAndIV();
-     ```
-
-   - **Encrypt Data with AES-GCM**:
-     ```javascript
-     const { encryptedData, authTag } = RahayuND.encryptWithAES(data, aesKey, iv);
-     ```
-
-   - **Encrypt AES Key with RSA-OAEP**:
-     ```javascript
-     const encryptedAESKey = await rahayu.encryptAESKeyWithRSA(aesKey);
-     ```
-
-   - **Combine Encrypted Results**:
-     ```javascript
-     return JSON.stringify({
-       encryptedData,
-       iv: iv.toString('base64'),
-       authTag: authTag.toString('base64'),
-       encryptedAESKey
-     });
-     ```
-
-3. **Decryption**:
-   ```javascript
-   // Decrypt data
-   const decryptedData = await rahayu.decrypt(encryptedPayload);
-   console.log('Decrypted Data:', decryptedData);
-   ```
-
-   - **Parse Encrypted Payload**:
-     ```javascript
-     const payload = JSON.parse(encryptedPayload);
-     ```
-
-   - **Decrypt AES Key with RSA-OAEP**:
-     ```javascript
-     const aesKey = await rahayu.decryptAESKeyWithRSA(payload.encryptedAESKey);
-     ```
-
-   - **Decrypt Data with AES-GCM**:
-     ```javascript
-     return RahayuND.decryptWithAES(
-       payload.encryptedData,
-       aesKey,
-       Buffer.from(payload.iv, 'base64'),
-       Buffer.from(payload.authTag, 'base64')
-     );
-     ```
-
-### Summary
-
-1. **Initialization**: Create an instance of `RahayuND` with paths to public and private keys.
-2. **Encryption**:
-   - Generate AES key and IV.
-   - Encrypt data using AES-GCM.
-   - Encrypt AES key using RSA-OAEP.
-   - Combine encrypted data, IV, authentication tag, and encrypted AES key into a JSON object.
-3. **Decryption**:
-   - Parse the JSON object to extract encrypted components.
-   - Decrypt the AES key using RSA-OAEP.
-   - Decrypt data using AES-GCM with the decrypted AES key, IV, and authentication tag.
-
-This flow ensures the data is securely encrypted and decrypted using a combination of symmetric and asymmetric cryptography, providing both confidentiality and integrity.
-
-Below is the documentation for the `RahayuND` class, including details about its methods, parameters, and usage examples.
-
-### `RahayuND` Class Documentation
-
-#### Description
-`RahayuND` is a class that provides hybrid encryption and decryption functionalities using AES for symmetric encryption and RSA for asymmetric encryption. This ensures both confidentiality and integrity of the data.
-
-#### Constructor
-
-##### `constructor(publicKeyPath, privateKeyPath)`
-- **Parameters**:
-  - `publicKeyPath` (string): Path to the RSA public key file.
-  - `privateKeyPath` (string): Path to the RSA private key file.
-  
-- **Example**:
-  ```javascript
-  const publicKeyPath = path.join(__dirname, 'keys', 'public.pem');
-  const privateKeyPath = path.join(__dirname, 'keys', 'private.pem');
-  const rahayu = new RahayuND(publicKeyPath, privateKeyPath);
-  ```
-
-#### Methods
-
-##### `static generateAESKeyAndIV()`
-- **Description**: Generates a random AES key and initialization vector (IV).
-- **Returns**: An object containing `key` (Buffer) and `iv` (Buffer).
-
-- **Example**:
-  ```javascript
-  const { key: aesKey, iv } = RahayuND.generateAESKeyAndIV();
-  ```
-
-##### `static encryptWithAES(data, aesKey, iv)`
-- **Description**: Encrypts data using AES-256-GCM.
-- **Parameters**:
-  - `data` (string): The plaintext data to encrypt.
-  - `aesKey` (Buffer): The AES key.
-  - `iv` (Buffer): The initialization vector.
-- **Returns**: An object containing `encryptedData` (string) and `authTag` (Buffer).
-
-- **Example**:
-  ```javascript
-  const { encryptedData, authTag } = RahayuND.encryptWithAES(data, aesKey, iv);
-  ```
-
-##### `async encryptAESKeyWithRSA(aesKey)`
-- **Description**: Encrypts the AES key using RSA-OAEP.
-- **Parameters**:
-  - `aesKey` (Buffer): The AES key to encrypt.
-- **Returns**: The encrypted AES key as a base64-encoded string.
-
-- **Example**:
-  ```javascript
-  const encryptedAESKey = await rahayu.encryptAESKeyWithRSA(aesKey);
-  ```
-
-##### `async decryptAESKeyWithRSA(encryptedAESKey)`
-- **Description**: Decrypts the AES key using RSA-OAEP.
-- **Parameters**:
-  - `encryptedAESKey` (string): The base64-encoded encrypted AES key.
-- **Returns**: The decrypted AES key (Buffer).
-
-- **Example**:
-  ```javascript
-  const aesKey = await rahayu.decryptAESKeyWithRSA(encryptedAESKey);
-  ```
-
-##### `static decryptWithAES(encryptedData, aesKey, iv, authTag)`
-- **Description**: Decrypts data using AES-256-GCM.
-- **Parameters**:
-  - `encryptedData` (string): The encrypted data.
-  - `aesKey` (Buffer): The AES key.
-  - `iv` (Buffer): The initialization vector.
-  - `authTag` (Buffer): The authentication tag.
-- **Returns**: The decrypted plaintext data (string).
-
-- **Example**:
-  ```javascript
-  const decryptedData = RahayuND.decryptWithAES(encryptedData, aesKey, iv, authTag);
-  ```
-
-##### `static async validateFilePath(filePath)`
-- **Description**: Validates if the given file path is accessible.
-- **Parameters**:
-  - `filePath` (string): The file path to validate.
-- **Throws**: An error if the file path is not accessible.
-
-- **Example**:
-  ```javascript
-  await RahayuND.validateFilePath(this.publicKeyPath);
-  ```
-
-##### `async encrypt(data)`
-- **Description**: Encrypts the given data using AES for the data and RSA for the AES key.
-- **Parameters**:
-  - `data` (string): The plaintext data to encrypt.
-- **Returns**: A JSON string containing the encrypted data, IV, authentication tag, and encrypted AES key.
-- **Throws**: An error if encryption fails.
-
-- **Example**:
-  ```javascript
-  const encryptedPayload = await rahayu.encrypt(data);
-  console.log('Encrypted Payload:', encryptedPayload);
-  ```
-
-##### `async decrypt(encryptedPayload)`
-- **Description**: Decrypts the given payload using RSA for the AES key and AES for the data.
-- **Parameters**:
-  - `encryptedPayload` (string): The JSON string containing the encrypted data, IV, authentication tag, and encrypted AES key.
-- **Returns**: The decrypted plaintext data (string).
-- **Throws**: An error if decryption fails.
-
-- **Example**:
-  ```javascript
-  const decryptedData = await rahayu.decrypt(encryptedPayload);
-  console.log('Decrypted Data:', decryptedData);
-  ```
-
-### Usage Example
-
-Here is an example demonstrating how to use the `RahayuND` class to encrypt and decrypt data:
-
-```javascript
-const path = require('path');
-const RahayuND = require('./path-to-your-rahayund-class');
-
-async function testEncryption() {
-  const publicKeyPath = path.join(__dirname, 'keys', 'public.pem');
-  const privateKeyPath = path.join(__dirname, 'keys', 'private.pem');
-  const rahayu = new RahayuND(publicKeyPath, privateKeyPath);
-
-  const data = 'Sensitive data that needs encryption';
-
-  try {
-    // Encrypt data
-    const encryptedPayload = await rahayu.encrypt(data);
-    console.log('Encrypted Payload:', encryptedPayload);
-
-    // Decrypt data
-    const decryptedData = await rahayu.decrypt(encryptedPayload);
-    console.log('Decrypted Data:', decryptedData);
-  } catch (error) {
-    console.error('An error occurred:', error.message);
-  }
-}
-
-testEncryption().catch(console.error);
-```
-
-### Summary
-The `RahayuND` class provides a robust and secure way to handle encryption and decryption using a combination of AES and RSA algorithms. It is designed to be easy to use, with methods to handle all necessary steps in the encryption and decryption processes. This ensures that data remains confidential and intact, leveraging the strengths of both symmetric and asymmetric cryptography.
+This class encapsulates functionalities for secure key management and cryptographic operations, with error handling and logging integrated for robustness. It allows for flexible configuration through options while providing default settings for ease of use.
