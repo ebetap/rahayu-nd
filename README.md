@@ -1,189 +1,233 @@
 ### `rajendra-hayuningrat`
 penulis bercerita, sesuatu itu akan mencapai kesempurnaan awal mulanya harus di pisahkan terlebih-dahulu untuk belajar memperbaiki diri masing-masing. Namun itu hanya sementara. setelah yang di pisahkan itu mengupgrade dirinya sendiri suatu saat akan di satukan kembali kalau sudah selaras. -Sastra Jendra Hayuningrat Pangruwating Diyu
 
-Modul ini menyediakan metode enkripsi dan dekripsi menggunakan algoritma AES-GCM untuk enkripsi data dan RSA-OAEP untuk enkripsi kunci AES, menggunakan Node.js `crypto` library.
+To effectively use the `Rahayu` class and its features, let's walk through each feature with detailed examples.
 
-### Background Concept and Flow
+### 1. Initialization and Instance Creation
 
-**Background Concept:**
-The `Rahayu` class is designed to facilitate cryptographic operations using AES encryption/decryption and RSA key management in Node.js applications. It provides functionalities to securely encrypt and decrypt data, manage RSA keys from files or URLs, and handle errors and logging effectively.
-
-**Flow of Operations:**
-1. **Initialization (`constructor`)**:
-   - Accepts paths or URLs to the public and private RSA keys, along with optional parameters (`options`) such as AES key length, AES IV length, RSA key bits, logger instance, and encryption algorithm.
-   - Initializes default values if optional parameters are not provided.
-
-2. **Key Retrieval and Validation:**
-   - `validatePathOrUrl(pathOrUrl)`: Validates if a given path or URL is accessible. Uses Axios to check if a URL is reachable or uses `fs.access()` for local file paths. Throws `InvalidPathError` if validation fails.
-   - `getKey(pathOrUrl)`: Retrieves a key asynchronously from either a local file path or a URL. Uses `fs.readFile()` for file paths and `axios.get()` for URLs. Handles errors if fetching fails.
-
-3. **Encryption and Decryption:**
-   - `encryptAESKeyWithRSA(aesKey)`: Encrypts an AES key using RSA-OAEP encryption. Retrieves the public RSA key, performs encryption, and returns the base64-encoded encrypted AES key.
-   - `decryptAESKeyWithRSA(encryptedAESKey)`: Decrypts a base64-encoded AES key using RSA-OAEP decryption. Retrieves the private RSA key, decrypts the AES key, and returns it as a Buffer.
-
-4. **Logging:**
-   - `createDefaultLogger()`: Static method that creates a default Winston logger instance configured to log to console and a file (`app.log`). Used for logging errors and information during key fetching, encryption, and decryption operations.
-
-5. **Error Handling:**
-   - Custom error classes (`EncryptionError`, `DecryptionError`, `InvalidPathError`) are defined to handle specific types of errors that may occur during cryptographic operations, key validation, or key retrieval.
-
-6. **External Dependencies:**
-   - Relies on Node.js `crypto` module for AES encryption/decryption and RSA key management.
-   - Uses `axios` for HTTP requests to fetch keys from URLs.
-   - Utilizes `fs` module for file system operations like reading files.
-
-### Documentation
-
-#### `Rahayu` Class
-
-##### Constructor
+First, you need to initialize an instance of `Rahayu`. This involves providing paths or URLs to your RSA public and private keys, and optionally configuring other parameters such as AES key length, AES IV length, and encryption algorithm.
 
 ```javascript
-/**
- * @class
- * Class for handling cryptographic operations including AES encryption/decryption and RSA key management.
- * @constructor
- * @param {string} publicKeyPathOrUrl - Path or URL to the public RSA key.
- * @param {string} privateKeyPathOrUrl - Path or URL to the private RSA key.
- * @param {Object} [options] - Additional options.
- * @param {number} [options.aesKeyLength] - Length of AES key in bytes.
- * @param {number} [options.aesIvLength] - Length of AES IV in bytes.
- * @param {number} [options.rsaKeyBits] - Number of bits for RSA key.
- * @param {Object} [options.logger] - Winston logger instance.
- * @param {string} [options.encryptionAlgorithm] - Encryption algorithm (default: AES-256-GCM).
- */
-constructor(publicKeyPathOrUrl, privateKeyPathOrUrl, options = {}) { ... }
-```
+import Rahayu from './Rahayu'; // Adjust path as per your file structure
 
-##### Methods
-
-- **`validatePathOrUrl(pathOrUrl)`**
-
-  ```javascript
-  /**
-   * Validates if the given path or URL is accessible.
-   * @param {string} pathOrUrl - File path or URL to validate.
-   * @returns {Promise<void>} - Resolves if path or URL is valid.
-   * @throws {InvalidPathError} - If path or URL is invalid.
-   */
-  async validatePathOrUrl(pathOrUrl) { ... }
-  ```
-
-- **`getKey(pathOrUrl)`**
-
-  ```javascript
-  /**
-   * Retrieves a key from file path or URL.
-   * @param {string} pathOrUrl - File path or URL to retrieve the key from.
-   * @returns {Promise<string>} - Resolves with the retrieved key.
-   * @throws {Error} - If failed to retrieve the key.
-   */
-  async getKey(pathOrUrl) { ... }
-  ```
-
-- **`encryptAESKeyWithRSA(aesKey)`**
-
-  ```javascript
-  /**
-   * Encrypts the AES key using RSA-OAEP.
-   * @param {Buffer} aesKey - AES key to encrypt.
-   * @returns {Promise<string>} - Resolves with the base64-encoded encrypted AES key.
-   * @throws {EncryptionError} - If encryption fails.
-   */
-  async encryptAESKeyWithRSA(aesKey) { ... }
-  ```
-
-- **`decryptAESKeyWithRSA(encryptedAESKey)`**
-
-  ```javascript
-  /**
-   * Decrypts the AES key using RSA-OAEP.
-   * @param {string} encryptedAESKey - Base64-encoded encrypted AES key.
-   * @returns {Promise<Buffer>} - Resolves with the decrypted AES key.
-   * @throws {DecryptionError} - If decryption fails.
-   */
-  async decryptAESKeyWithRSA(encryptedAESKey) { ... }
-  ```
-
-- **`fetchKey(url)`**
-
-  ```javascript
-  /**
-   * Fetches a key from a given URL.
-   * @param {string} url - URL to fetch the key from.
-   * @returns {Promise<string>} - Resolves with the fetched key.
-   * @throws {Error} - If fetching the key fails.
-   */
-  async fetchKey(url) { ... }
-  ```
-
-- **`createDefaultLogger()`**
-
-  ```javascript
-  /**
-   * Creates a default Winston logger instance.
-   * @returns {Object} - Winston logger instance.
-   */
-  static createDefaultLogger() { ... }
-  ```
-
-##### Constants
-
-- **`DEFAULT_AES_KEY_LENGTH`**, **`DEFAULT_AES_IV_LENGTH`**, **`DEFAULT_RSA_KEY_BITS`**
-
-  Constants defining default values for AES key length, AES IV length, and RSA key bits respectively.
-
-- **`AES_ALGORITHM`**
-
-  Constant defining the default AES encryption algorithm (`aes-256-gcm`).
-
-- **`UTF8_ENCODING`**
-
-  Constant defining UTF-8 encoding, used for encoding/decoding strings.
-
-##### Error Classes
-
-- **`EncryptionError`**
-
-  Custom error class for encryption failures.
-
-- **`DecryptionError`**
-
-  Custom error class for decryption failures.
-
-- **`InvalidPathError`**
-
-  Custom error class for invalid file paths or URLs.
-
-#### Example Usage
-
-```javascript
-// Example usage of Rahayu class
-import Rahayu from './Rahayu';
-
-async function exampleUsage() {
-  const publicKeyPath = './keys/public.pem';
-  const privateKeyPath = './keys/private.pem';
-
-  const rahayuInstance = new Rahayu(publicKeyPath, privateKeyPath);
-
+async function main() {
   try {
-    // Encrypt AES key
-    const aesKey = Buffer.from('supersecretkey', Rahayu.UTF8_ENCODING);
-    const encryptedAESKey = await rahayuInstance.encryptAESKeyWithRSA(aesKey);
-    console.log('Encrypted AES Key:', encryptedAESKey);
+    // Example paths or URLs to your RSA keys
+    const publicKeyPathOrUrl = 'https://example.com/public_key.pem';
+    const privateKeyPathOrUrl = 'https://example.com/private_key.pem';
 
-    // Decrypt AES key
-    const decryptedAESKey = await rahayuInstance.decryptAESKeyWithRSA(encryptedAESKey);
-    console.log('Decrypted AES Key:', decryptedAESKey.toString(Rahayu.UTF8_ENCODING));
+    // Optional configuration parameters
+    const options = {
+      aesKeyLength: 32, // 256-bit AES key length (default)
+      aesIvLength: 16, // 16 bytes IV for AES-GCM (default)
+      rsaKeyBits: 8192, // 8192-bit RSA key length (default)
+      encryptionAlgorithm: 'aes-256-gcm', // AES encryption algorithm (default)
+      logger: Rahayu.createDefaultLogger() // Optional custom logger
+    };
+
+    // Create an instance of Rahayu and initialize
+    const instance = await Rahayu.createInstance(publicKeyPathOrUrl, privateKeyPathOrUrl, options);
+
+    // Once initialized, instance is ready to use
+    console.log('Rahayu instance initialized successfully');
+    
+    // Use instance for encryption, decryption, key management, etc.
+    // Example usage will follow for each feature.
+    
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Initialization error:', error);
   }
 }
 
-exampleUsage();
+main();
+```
+
+### 2. Key Management
+
+#### Fetching Keys
+You can fetch keys from URLs or local file paths. The `getKey()` method handles this, caching keys to minimize network/file access.
+
+```javascript
+// Fetch a key (example with public key)
+async function fetchPublicKeyExample() {
+  try {
+    const publicKey = await instance.getKey(publicKeyPathOrUrl);
+    console.log('Public key fetched successfully:', publicKey);
+  } catch (error) {
+    console.error('Failed to fetch public key:', error);
+  }
+}
+
+fetchPublicKeyExample();
+```
+
+#### Rotating Keys
+You can rotate keys by specifying new paths/URLs for public and private keys using `rotateKeys()`.
+
+```javascript
+// Rotate keys (example with new paths or URLs)
+async function rotateKeysExample() {
+  try {
+    const newPublicKeyPathOrUrl = 'https://example.com/new_public_key.pem';
+    const newPrivateKeyPathOrUrl = 'https://example.com/new_private_key.pem';
+
+    await instance.rotateKeys(newPublicKeyPathOrUrl, newPrivateKeyPathOrUrl);
+    console.log('Key rotation successful');
+  } catch (error) {
+    console.error('Key rotation error:', error);
+  }
+}
+
+rotateKeysExample();
+```
+
+### 3. Encryption and Decryption
+
+#### Encrypting Data
+You can encrypt data using AES encryption with HMAC for data integrity.
+
+```javascript
+// Encrypt data (example)
+async function encryptDataExample() {
+  try {
+    const data = 'Sensitive information';
+    const aesKey = instance.generateAESKey();
+    const iv = crypto.randomBytes(instance.aesIvLength);
+
+    const encryptedData = await instance.encryptData(data, aesKey, iv);
+    console.log('Encrypted data:', encryptedData);
+  } catch (error) {
+    console.error('Encryption error:', error);
+  }
+}
+
+encryptDataExample();
+```
+
+#### Decrypting Data
+Decrypt previously encrypted data using the AES key and IV.
+
+```javascript
+// Decrypt data (example)
+async function decryptDataExample(encryptedData, aesKey, iv, authTag, hmacDigest) {
+  try {
+    const decryptedData = await instance.decryptData(encryptedData, aesKey, iv, authTag, hmacDigest);
+    console.log('Decrypted data:', decryptedData);
+  } catch (error) {
+    console.error('Decryption error:', error);
+  }
+}
+
+// Example decryption flow (assuming you have encryptedData, aesKey, iv, authTag, and hmacDigest from previous encryption)
+decryptDataExample(encryptedData, aesKey, iv, authTag, hmacDigest);
+```
+
+### 4. Configuration Management
+
+#### Storing Configuration
+Encrypt and store configuration data securely to a file.
+
+```javascript
+// Store configuration (example)
+async function storeConfigExample(configData, configPath) {
+  try {
+    await instance.storeConfig(configData, configPath);
+    console.log('Configuration stored successfully');
+  } catch (error) {
+    console.error('Configuration storage error:', error);
+  }
+}
+
+// Example configuration data and file path
+const configData = { username: 'admin', password: 'secret' };
+const configPath = './config.json'; // Adjust path as needed
+
+storeConfigExample(configData, configPath);
+```
+
+#### Retrieving Configuration
+Retrieve and decrypt configuration data from a stored file.
+
+```javascript
+// Retrieve configuration (example)
+async function retrieveConfigExample(configPath) {
+  try {
+    const config = await instance.retrieveConfig(configPath);
+    console.log('Retrieved configuration:', config);
+  } catch (error) {
+    console.error('Configuration retrieval error:', error);
+  }
+}
+
+// Example configPath should point to the previously stored configuration file
+retrieveConfigExample(configPath);
+```
+
+### 5. Integration with Cloud KMS (AWS and Google Cloud)
+
+#### AWS KMS Integration
+
+```javascript
+// Encrypt with AWS KMS (example)
+async function encryptWithAWSKMSExample(keyId, plaintext) {
+  try {
+    const ciphertext = await instance.encryptWithAWSKMS(keyId, plaintext);
+    console.log('Encrypted with AWS KMS:', ciphertext);
+  } catch (error) {
+    console.error('AWS KMS encryption error:', error);
+  }
+}
+
+// Decrypt with AWS KMS (example)
+async function decryptWithAWSKMSExample(keyId, ciphertext) {
+  try {
+    const plaintext = await instance.decryptWithAWSKMS(keyId, ciphertext);
+    console.log('Decrypted with AWS KMS:', plaintext);
+  } catch (error) {
+    console.error('AWS KMS decryption error:', error);
+  }
+}
+
+// Example keyId and plaintext for AWS KMS
+const awsKeyId = 'your-aws-key-id';
+const awsPlaintext = 'Sensitive information';
+
+encryptWithAWSKMSExample(awsKeyId, awsPlaintext);
+// Assuming you have the ciphertext from the encryption step
+decryptWithAWSKMSExample(awsKeyId, ciphertext);
+```
+
+#### Google Cloud KMS Integration
+
+```javascript
+// Encrypt with Google Cloud KMS (example)
+async function encryptWithGoogleKMSExample(keyName, plaintext) {
+  try {
+    const ciphertext = await instance.encryptWithGoogleKMS(keyName, plaintext);
+    console.log('Encrypted with Google Cloud KMS:', ciphertext);
+  } catch (error) {
+    console.error('Google Cloud KMS encryption error:', error);
+  }
+}
+
+// Decrypt with Google Cloud KMS (example)
+async function decryptWithGoogleKMSExample(keyName, ciphertext) {
+  try {
+    const plaintext = await instance.decryptWithGoogleKMS(keyName, ciphertext);
+    console.log('Decrypted with Google Cloud KMS:', plaintext);
+  } catch (error) {
+    console.error('Google Cloud KMS decryption error:', error);
+  }
+}
+
+// Example keyName and plaintext for Google Cloud KMS
+const googleKeyName = 'projects/your-project/locations/global/keyRings/your-key-ring/cryptoKeys/your-key';
+const googlePlaintext = 'Sensitive information';
+
+encryptWithGoogleKMSExample(googleKeyName, googlePlaintext);
+// Assuming you have the ciphertext from the encryption step
+decryptWithGoogleKMSExample(googleKeyName, ciphertext);
 ```
 
 ### Summary
-
-The `Rahayu` class encapsulates robust cryptographic functionalities in Node.js, providing secure AES encryption/decryption and RSA key management. It emphasizes error handling, logging, and flexibility through customizable options. By using this class, developers can securely manage keys, encrypt sensitive data, and decrypt encrypted data in their applications.
+The `Rahayu` class provides robust encryption, decryption, key management, and configuration handling functionalities for secure data management in Node.js applications. By following these examples, you can integrate these features into your applications effectively, ensuring data security and integrity across various use cases. Adjust paths, URLs, and specific data as per your application's requirements and security policies.
