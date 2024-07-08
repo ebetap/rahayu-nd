@@ -1,5 +1,5 @@
 ### `rajendra-hayuningrat`
-Penulis bercerita, sesuatu itu akan mencapai kesempurnaan awal mulanya harus di pisahkan terlebih-dahulu untuk belajar memperbaiki diri masing-masing. Namun itu hanya sementara. setelah yang di pisahkan itu mengupgrade dirinya sendiri suatu saat akan di satukan kembali kalau sudah selaras. -Sastra Jendra Hayuningrat Pangruwating Diyu
+Sesuatu itu akan mencapai kesempurnaan awal mulanya harus di pisahkan terlebih-dahulu untuk belajar memperbaiki diri masing-masing. Namun itu hanya sementara. setelah yang di pisahkan itu mengupgrade dirinya sendiri suatu saat akan di satukan kembali kalau sudah selaras.
 
 Modul ini menyediakan metode enkripsi dan dekripsi menggunakan algoritma AES-GCM untuk enkripsi data dan RSA-OAEP untuk enkripsi kunci AES, menggunakan Node.js `crypto` library.
 
@@ -8,236 +8,163 @@ Modul ini menyediakan metode enkripsi dan dekripsi menggunakan algoritma AES-GCM
 **Background Concept:**
 The `Rahayu` class is designed to facilitate cryptographic operations using AES encryption/decryption and RSA key management in Node.js applications. It provides functionalities to securely encrypt and decrypt data, manage RSA keys from files or URLs, and handle errors and logging effectively.
 
-**Flow of Operations:**
-1. **Initialization (`constructor`)**:
-   - Accepts paths or URLs to the public and private RSA keys, along with optional parameters (`options`) such as AES key length, AES IV length, RSA key bits, logger instance, and encryption algorithm.
-   - Initializes default values if optional parameters are not provided.
+#### Overview
+The `Rahayu` class provides functionalities for symmetric and asymmetric encryption using AES and RSA algorithms, respectively. It supports key management from local files or remote URLs and includes error handling and logging capabilities.
 
-2. **Key Retrieval and Validation:**
-   - `validatePathOrUrl(pathOrUrl)`: Validates if a given path or URL is accessible. Uses Axios to check if a URL is reachable or uses `fs.access()` for local file paths. Throws `InvalidPathError` if validation fails.
-   - `getKey(pathOrUrl)`: Retrieves a key asynchronously from either a local file path or a URL. Uses `fs.readFile()` for file paths and `axios.get()` for URLs. Handles errors if fetching fails.
-
-3. **Encryption and Decryption:**
-   - `encryptAESKeyWithRSA(aesKey)`: Encrypts an AES key using RSA-OAEP encryption. Retrieves the public RSA key, performs encryption, and returns the base64-encoded encrypted AES key.
-   - `decryptAESKeyWithRSA(encryptedAESKey)`: Decrypts a base64-encoded AES key using RSA-OAEP decryption. Retrieves the private RSA key, decrypts the AES key, and returns it as a Buffer.
-
-4. **Logging:**
-   - `createDefaultLogger()`: Static method that creates a default Winston logger instance configured to log to console and a file (`app.log`). Used for logging errors and information during key fetching, encryption, and decryption operations.
-
-5. **Error Handling:**
-   - Custom error classes (`EncryptionError`, `DecryptionError`, `InvalidPathError`) are defined to handle specific types of errors that may occur during cryptographic operations, key validation, or key retrieval.
-
-6. **External Dependencies:**
-   - Relies on Node.js `crypto` module for AES encryption/decryption and RSA key management.
-   - Uses `axios` for HTTP requests to fetch keys from URLs.
-   - Utilizes `fs` module for file system operations like reading files.
-
-### Documentation
-
-#### `Rahayu` Class
-
-##### Constructor
-
+#### Constructor
 ```javascript
 /**
- * @class
- * Class for handling cryptographic operations including AES encryption/decryption and RSA key management.
- * @constructor
- * @param {string} publicKeyPathOrUrl - Path or URL to the public RSA key.
- * @param {string} privateKeyPathOrUrl - Path or URL to the private RSA key.
- * @param {Object} [options] - Additional options.
- * @param {number} [options.aesKeyLength] - Length of AES key in bytes.
- * @param {number} [options.aesIvLength] - Length of AES IV in bytes.
- * @param {number} [options.rsaKeyBits] - Number of bits for RSA key.
- * @param {Object} [options.logger] - Winston logger instance.
- * @param {string} [options.encryptionAlgorithm] - Encryption algorithm (default: AES-256-GCM).
+ * Creates an instance of Rahayu for encryption and decryption operations.
+ * @param {string} publicKeyPathOrUrl - Path or URL to the RSA public key.
+ * @param {string} privateKeyPathOrUrl - Path or URL to the RSA private key.
+ * @param {Object} [options] - Optional parameters.
+ * @param {number} [options.aesKeyLength=32] - Length of AES key in bytes.
+ * @param {number} [options.aesIvLength=12] - Length of AES initialization vector (IV) in bytes.
+ * @param {number} [options.rsaKeyBits=4096] - Number of bits for RSA key size.
+ * @param {Object} [options.logger] - Custom logger (default uses Winston).
+ * @param {string} [options.encryptionAlgorithm='aes-256-gcm'] - Encryption algorithm to use (default AES-256-GCM).
  */
 constructor(publicKeyPathOrUrl, privateKeyPathOrUrl, options = {}) { ... }
 ```
 
-##### Methods
+#### Properties
+- `aesKeyLength`: Length of AES key in bytes.
+- `aesIvLength`: Length of AES initialization vector (IV) in bytes.
+- `rsaKeyBits`: Number of bits for RSA key size.
+- `encryptionAlgorithm`: Encryption algorithm used (default is AES-256-GCM).
+- `logger`: Logger instance for logging events.
 
-- **`validatePathOrUrl(pathOrUrl)`**
+#### Methods
 
-  ```javascript
-  /**
-   * Validates if the given path or URL is accessible.
-   * @param {string} pathOrUrl - File path or URL to validate.
-   * @returns {Promise<void>} - Resolves if path or URL is valid.
-   * @throws {InvalidPathError} - If path or URL is invalid.
-   */
-  async validatePathOrUrl(pathOrUrl) { ... }
-  ```
+##### `fetchKey(url)`
+```javascript
+/**
+ * Fetches a key from a given URL.
+ * @param {string} url - URL to fetch the key from.
+ * @returns {Promise<string>} - Resolves with the fetched key data.
+ * @throws {Error} - If fetching the key fails.
+ */
+async fetchKey(url) { ... }
+```
 
-- **`getKey(pathOrUrl)`**
+##### `validatePathOrUrl(pathOrUrl)`
+```javascript
+/**
+ * Validates if the provided path or URL exists.
+ * @param {string} pathOrUrl - Path or URL to validate.
+ * @returns {Promise<void>} - Resolves if path or URL is valid.
+ * @throws {InvalidPathError} - If path or URL is invalid.
+ */
+async validatePathOrUrl(pathOrUrl) { ... }
+```
 
-  ```javascript
-  /**
-   * Retrieves a key from file path or URL.
-   * @param {string} pathOrUrl - File path or URL to retrieve the key from.
-   * @returns {Promise<string>} - Resolves with the retrieved key.
-   * @throws {Error} - If failed to retrieve the key.
-   */
-  async getKey(pathOrUrl) { ... }
-  ```
+##### `getKey(pathOrUrl)`
+```javascript
+/**
+ * Retrieves the key data from a local file path or URL.
+ * @param {string} pathOrUrl - Path or URL to the key.
+ * @returns {Promise<string>} - Resolves with the key data as a string.
+ * @throws {Error} - If key retrieval fails.
+ */
+async getKey(pathOrUrl) { ... }
+```
 
-- **`encryptAESKeyWithRSA(aesKey)`**
+##### `encryptData(data)`
+```javascript
+/**
+ * Encrypts provided data using AES-256-GCM encryption.
+ * @param {string} data - Data to encrypt.
+ * @returns {Promise<Object>} - Resolves with encrypted data, IV, and authentication tag.
+ * @throws {EncryptionError} - If encryption fails.
+ */
+async encryptData(data) { ... }
+```
 
-  ```javascript
-  /**
-   * Encrypts the AES key using RSA-OAEP.
-   * @param {Buffer} aesKey - AES key to encrypt.
-   * @returns {Promise<string>} - Resolves with the base64-encoded encrypted AES key.
-   * @throws {EncryptionError} - If encryption fails.
-   */
-  async encryptAESKeyWithRSA(aesKey) { ... }
-  ```
+##### `decryptData(encryptedData, iv, authTag)`
+```javascript
+/**
+ * Decrypts AES-256-GCM encrypted data.
+ * @param {string} encryptedData - Encrypted data to decrypt.
+ * @param {Buffer} iv - Initialization vector used for encryption.
+ * @param {Buffer} authTag - Authentication tag associated with encrypted data.
+ * @returns {Promise<string>} - Resolves with decrypted data as a string.
+ * @throws {DecryptionError} - If decryption fails.
+ */
+async decryptData(encryptedData, iv, authTag) { ... }
+```
 
-- **`decryptAESKeyWithRSA(encryptedAESKey)`**
+##### `encryptAESKeyWithRSA()`
+```javascript
+/**
+ * Encrypts the AES key using RSA public key encryption (RSA_PKCS1_OAEP_PADDING).
+ * @returns {Promise<string>} - Resolves with the base64-encoded encrypted AES key.
+ * @throws {EncryptionError} - If encryption fails.
+ */
+async encryptAESKeyWithRSA() { ... }
+```
 
-  ```javascript
-  /**
-   * Decrypts the AES key using RSA-OAEP.
-   * @param {string} encryptedAESKey - Base64-encoded encrypted AES key.
-   * @returns {Promise<Buffer>} - Resolves with the decrypted AES key.
-   * @throws {DecryptionError} - If decryption fails.
-   */
-  async decryptAESKeyWithRSA(encryptedAESKey) { ... }
-  ```
+##### `decryptAESKeyWithRSA(encryptedAESKey)`
+```javascript
+/**
+ * Decrypts the AES key using RSA private key decryption (RSA_PKCS1_OAEP_PADDING).
+ * @param {string} encryptedAESKey - Base64-encoded encrypted AES key.
+ * @returns {Promise<Buffer>} - Resolves with the decrypted AES key as a Buffer.
+ * @throws {DecryptionError} - If decryption fails.
+ */
+async decryptAESKeyWithRSA(encryptedAESKey) { ... }
+```
 
-- **`fetchKey(url)`**
-
-  ```javascript
-  /**
-   * Fetches a key from a given URL.
-   * @param {string} url - URL to fetch the key from.
-   * @returns {Promise<string>} - Resolves with the fetched key.
-   * @throws {Error} - If fetching the key fails.
-   */
-  async fetchKey(url) { ... }
-  ```
-
-- **`createDefaultLogger()`**
-
-  ```javascript
-  /**
-   * Creates a default Winston logger instance.
-   * @returns {Object} - Winston logger instance.
-   */
-  static createDefaultLogger() { ... }
-  ```
-
-##### Constants
-
-- **`DEFAULT_AES_KEY_LENGTH`**, **`DEFAULT_AES_IV_LENGTH`**, **`DEFAULT_RSA_KEY_BITS`**
-
-  Constants defining default values for AES key length, AES IV length, and RSA key bits respectively.
-
-- **`AES_ALGORITHM`**
-
-  Constant defining the default AES encryption algorithm (`aes-256-gcm`).
-
-- **`UTF8_ENCODING`**
-
-  Constant defining UTF-8 encoding, used for encoding/decoding strings.
-
-##### Error Classes
-
-- **`EncryptionError`**
-
-  Custom error class for encryption failures.
-
-- **`DecryptionError`**
-
-  Custom error class for decryption failures.
-
-- **`InvalidPathError`**
-
-  Custom error class for invalid file paths or URLs.
+#### Errors
+- `EncryptionError`: Thrown when encryption operations fail.
+- `DecryptionError`: Thrown when decryption operations fail.
+- `InvalidPathError`: Thrown when an invalid file path or URL is provided.
 
 #### Example Usage
-
 ```javascript
-import path from 'path';
-import crypto from 'crypto';
 import Rahayu from './index.js';
+import path from 'path';
 
-// Define paths to your RSA keys (change paths as per your setup)
-const publicKeyPath = path.resolve('./public_key.pem');
-const privateKeyPath = path.resolve('./private_key.pem');
+// Example usage
+async function exampleUsage() {
+  // Paths to your RSA keys (replace with actual paths or URLs)
+  const publicKeyPath = path.resolve('./public_key.pem');
+  const privateKeyPath = path.resolve('./private_key.pem');
 
-// Example data to encrypt
-const plaintext = 'Hello, world!';
+  // Initialize Rahayu instance with RSA keys and generate AES key internally
+  const rahayu = new Rahayu(publicKeyPath, privateKeyPath);
 
-async function runExample() {
   try {
-    // Create an instance of Rahayu
-    const rahayu = new Rahayu(publicKeyPath, privateKeyPath);
-    
-    // Encrypt data
-    const { encryptedAESKey, encryptedData, iv, tag } = await encryptData(rahayu, plaintext);
-    console.log('Encrypted result:', { encryptedAESKey, encryptedData, iv, tag });
+    // Encrypt data using internally generated AES key
+    const plaintext = 'Sensitive information';
+    const { encryptedData, iv, authTag } = await rahayu.encryptData(plaintext);
 
-    // Decrypt data
-    const decryptedData = await decryptData(rahayu, encryptedAESKey, encryptedData, iv, tag);
-    console.log('Decrypted result:', decryptedData);
+    console.log('Encrypted Data:', encryptedData);
+    console.log('Initialization Vector (IV):', iv.toString('base64'));
+    console.log('Authentication Tag (authTag):', authTag.toString('base64'));
+
+    // Decrypt data using internally generated AES key, IV, and authTag
+    const decryptedData = await rahayu.decryptData(encryptedData, iv, authTag);
+    console.log('Decrypted Data:', decryptedData);
   } catch (error) {
     console.error('Error:', error);
   }
 }
-
-async function encryptData(rahayu, data) {
-  try {
-    // Generate a random AES key
-    const aesKey = crypto.randomBytes(rahayu.aesKeyLength);
-    
-    // Encrypt AES key with RSA-OAEP
-    const encryptedAESKey = await rahayu.encryptAESKeyWithRSA(aesKey);
-    
-    // Generate IV
-    const iv = crypto.randomBytes(rahayu.aesIvLength);
-    
-    // Create cipher instance
-    const cipher = crypto.createCipheriv(rahayu.encryptionAlgorithm, aesKey, iv);
-    
-    // Encrypt data
-    let encryptedData = cipher.update(data, 'utf8', 'base64');
-    encryptedData += cipher.final('base64');
-    
-    // Get authentication tag
-    const tag = cipher.getAuthTag().toString('base64');
-    
-    return { encryptedAESKey, encryptedData, iv: iv.toString('base64'), tag };
-  } catch (error) {
-    throw error;
-  }
-}
-
-async function decryptData(rahayu, encryptedAESKey, encryptedData, iv, tag) {
-  try {
-    // Decrypt AES key using RSA
-    const decryptedAESKey = await rahayu.decryptAESKeyWithRSA(encryptedAESKey);
-    
-    // Create decipher instance
-    const decipher = crypto.createDecipheriv(rahayu.encryptionAlgorithm, decryptedAESKey, Buffer.from(iv, 'base64'));
-    
-    // Set authentication tag
-    decipher.setAuthTag(Buffer.from(tag, 'base64'));
-    
-    // Decrypt data
-    let decryptedData = decipher.update(encryptedData, 'base64', 'utf8');
-    decryptedData += decipher.final('utf8');
-    
-    return decryptedData;
-  } catch (error) {
-    throw error;
-  }
-}
-
-// Run the example
-runExample();
+// Execute example
+exampleUsage();
 ```
 
-### Summary
+### Flow Explanation
+1. **Initialization**: Create an instance of `Rahayu` with paths to RSA keys and optional configurations.
+2. **Key Management**:
+   - Fetch RSA keys from specified paths or URLs.
+   - Generate or use provided AES keys for symmetric encryption.
+3. **Encryption**:
+   - Encrypt data using AES-256-GCM with randomly generated IV and authentication tag.
+   - Optionally, encrypt AES keys using RSA public key encryption.
+4. **Decryption**:
+   - Decrypt AES-encrypted data using AES-256-GCM with provided IV and authentication tag.
+   - Decrypt AES keys using RSA private key decryption.
+5. **Error Handling**: Custom error classes (`EncryptionError`, `DecryptionError`, `InvalidPathError`) handle specific error scenarios.
+6. **Logging**: Uses Winston for logging events and errors to console and a log file.
 
-The `Rahayu` class encapsulates robust cryptographic functionalities in Node.js, providing secure AES encryption/decryption and RSA key management. It emphasizes error handling, logging, and flexibility through customizable options. By using this class, developers can securely manage keys, encrypt sensitive data, and decrypt encrypted data in their applications.
+This documentation outline provides a comprehensive overview of the `Rahayu` class, its functionality, usage examples, and error handling strategies. Adjustments can be made based on specific project needs and additional features.
