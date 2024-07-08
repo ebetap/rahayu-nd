@@ -1,5 +1,5 @@
-import { promises as crypto } from 'crypto';
-import { promises as fs } from 'fs';
+import crypto from 'crypto';
+import fs from 'fs';
 import axios from 'axios';
 import winston from 'winston';
 
@@ -31,8 +31,8 @@ class InvalidPathError extends Error {
  */
 export default class Rahayu {
   static DEFAULT_AES_KEY_LENGTH = 32; // 256-bit AES key
-  static DEFAULT_AES_IV_LENGTH = 16;  // 16 bytes IV for GCM
-  static DEFAULT_RSA_KEY_BITS = 8192; // 8192-bit RSA key
+  static DEFAULT_AES_IV_LENGTH = 12;  // 12 bytes IV for AES-GCM
+  static DEFAULT_RSA_KEY_BITS = 4096; // 8192-bit RSA key
   static AES_ALGORITHM = 'aes-256-gcm';
   static UTF8_ENCODING = 'utf8';
 
@@ -120,7 +120,7 @@ export default class Rahayu {
       if (pathOrUrl.startsWith('http')) {
         return await this.fetchKey(pathOrUrl);
       } else {
-        return await fs.readFile(pathOrUrl, Rahayu.UTF8_ENCODING);
+        return await fs.readFileSync(pathOrUrl, Rahayu.UTF8_ENCODING);
       }
     } catch (err) {
       throw new Error(`Failed to get key from ${pathOrUrl}: ${err.message}`);
@@ -166,3 +166,4 @@ export default class Rahayu {
       throw new DecryptionError(`Failed to decrypt AES key: ${err.message}`);
     }
   }
+}
